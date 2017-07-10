@@ -1,0 +1,19 @@
+# RUN PLAYBOOK
+#
+# Read README.md for detail
+#
+# ansible-playbook -i kubernetes/inventories/production/hosts kubernetes/site-create_ckuster.yml -e clustername=kubernetes -u centos
+
+---
+
+# Main file:
+- include: all-nodes.yml
+- include: master-node.yml
+- include: edge-nodes.yml
+- include: gentoken.yml
+- include: master-config.yml
+- include: edge-config.yml
+- include: checknodes.yml
+- include: plugins.yml
+- include: checknodes.yml
+- include: checkpods.yml

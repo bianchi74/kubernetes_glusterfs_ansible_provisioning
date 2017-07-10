@@ -1,0 +1,8 @@
+# Create tokek for cluster initialization
+- hosts: 127.0.0.1
+  become: yes
+  become_user: root
+  become_method: sudo
+  gather_facts: no
+  roles:
+    - role: create_token

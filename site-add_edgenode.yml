@@ -1,0 +1,13 @@
+# RUN PLAYBOOK
+#
+# Read README.md for detail
+#
+# ansible-playbook -i kubernetes/inventories/production/addedgehosts kubernetes/site-add_edgenode.yml -e clustername=kubernetes -u centos
+
+---
+
+# Main file:
+- include: edge-nodes.yml
+- include: gentoken.yml
+- include: edge-config.yml
+- include: checknodes.yml

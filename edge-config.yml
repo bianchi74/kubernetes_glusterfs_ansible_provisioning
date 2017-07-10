@@ -1,0 +1,18 @@
+# Joining edge nodes to kubernetes cluster
+- hosts: "{{ clustername }}_edge"
+  become: yes
+  become_user: root
+  become_method: sudo
+  gather_facts: no
+  roles:
+  #  - edgenodevar
+    - configedge
+
+- hosts: "{{ clustername }}_edgeadd"
+  become: yes
+  become_user: root
+  become_method: sudo
+  gather_facts: no
+  roles:
+  #  - edgenodevar
+    - configedge

@@ -1,0 +1,132 @@
+---
+#Tasks install "Docker"
+- name: Uninstall Docker & Utility existing versions
+  yum: name={{ item }} state=absent
+  with_items:
+   - docker
+   - docker-common
+   - container-selinux
+   - docker-selinux
+   - docker-engine
+   - yum-utils
+   - device-mapper-persistent-data
+   - lvm2
+  ignore_errors: True
+
+- name: Install Docker utility
+  yum: name={{ item }} state=latest
+  with_items:
+   - yum-utils
+   - device-mapper-persistent-data
+   - lvm2
+
+- name: Check if Docker repo is already configured
+  stat: path={{ docker_repofile_path }}  
+  register: docker_repofile_result
+    
+- name: Add Docker repository
+  command: yum-config-manager --add-repo  https://download.docker.com/linux/centos/docker-ce.repo
+  when: not docker_repofile_result.stat.exists
+  
+- name: Install Docker
+  yum: name={{ item }} state=latest
+  with_items:
+   - docker
+
+- name: Docker service Enable & Start
+  service:
+    name: docker
+    state: started
+    enabled: yes
+    
+# Tasks install "Kubectl" last version or specific version if defined in ansible hosts variable
+- name: Clean old kubectl file if already present
+  file:
+    state: absent
+    path: /usr/local/bin/kubectl
+    
+- name: Check kubectl stable version
+  get_url: 
+    url: https://storage.googleapis.com/kubernetes-release/release/stable.txt
+    dest: /tmp/stable.txt
+  when: kubectl_version is undefined
+  
+- name: Return stable.txt kubectl to registered var
+  command: cat /tmp/stable.txt
+  register: version_stdout
+  when: kubectl_version is undefined
+  
+- name: Set Kubectl Version if defined in hosts var 
+  set_fact:
+    version: "{{ kubectl_version }}"
+  when: kubectl_version is defined
+
+- name: Set Kubectl Version last stable
+  set_fact:
+    version: "{{ version_stdout.stdout }}"
+  when: kubectl_version is undefined
+
+- name: Download kubectl and make executable in folder /usr/local/bin/
+  get_url:
+    url: https://storage.googleapis.com/kubernetes-release/release/{{ version }}/bin/linux/amd64/kubectl
+    dest: /usr/local/bin/kubectl
+    force_basic_auth: yes
+    mode: 0750
+    
+- name: Export env var for Kubernetes
+  lineinfile:
+    dest=/root/.bashrc 
+    line="source <(kubectl completion bash)"
+    state=present
+    insertafter=EOF
+    create=True
+    
+# Tasks Install Kubernetes Repository
+- name: Clean existing repo and install kubernetes repo 
+  file:
+    state: absent
+    path: /etc/yum.repos.d/kubernetes.repo
+
+- name: Import kubernetes repo 
+  copy: 
+    src: kubernetes.repo
+    dest: /etc/yum.repos.d/
+
+# Tasks Installing kubelet and kubeadm    
+- name: Uninstall old versions kubelet kubeadm kubernetes-cni
+  yum: name={{ item }} state=absent
+  with_items:
+   - kubelet
+   - kubeadm
+   - kubernetes-cni
+  ignore_errors: True
+
+- name: Install kubelet kubeadm kubernetes-cni
+  yum: name={{ item }} state=latest
+  with_items:
+   - kubelet
+   - kubeadm
+   - kubernetes-cni
+
+- name: Kubelet service Enable & Start
+  service:
+    name: kubelet
+    state: started
+    enabled: yes
+
+- name: Add sysctl vars for Kubernetesnet.bridge.bridge-nf-call-ip6tables = 1 
+  sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables
+    value: 1
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+
+- name: Add sysctl vars for Kubernetesnet.bridge.bridge-nf-call-iptables = 1
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: 1
+    sysctl_set: yes
+    state: present
+    reload: yes

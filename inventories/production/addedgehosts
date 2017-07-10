@@ -1,0 +1,31 @@
+# ANSIBLE INVENTORY EXAMPLE ADD EDGE NODE
+
+# [clustername]
+# Create an inventory group with "clustername"
+#
+[kubernetes]
+
+# [clustername:children]
+# The cluster group contains one children group: edge 
+[kubernetes:children]
+kubernetes_edgeadd
+
+# [clustername_master]
+# The master group should have hostname and ip address of master node
+[kubernetes_master]
+master ansible_ssh_host=192.168.1.143
+
+# [clustername_edgeadd]
+# The edge group should have hostname and ip address for new node 
+[kubernetes_edgeadd]
+hostname4 ansible_ssh_host=192.168.1.148
+
+[all:vars]
+# Specify domain for master and edge nodes
+dns_domain=test.local
+
+# If you need specific kubelet version use below var. Otherwise last stable version will be installed 
+#kubectl_version=v1.6.4
+
+# Insert master ip address var for cluster init
+master_ip_address=192.168.1.143

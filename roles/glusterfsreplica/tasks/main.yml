@@ -1,0 +1,40 @@
+---
+
+#Tasks configure "GlusterFS" replica  
+- name: Check if Gluster volumes already exist.
+  shell: "gluster volume info"
+  changed_when: false
+  register: gluster_volume_info
+
+- debug:
+        var: gluster_volume_info.stdout_lines
+
+- name: Configure Gluster volume cluster replica.
+  gluster_volume:
+    state: present
+    name: "{{ gluster_brick_name }}"
+    brick: "{{ gluster_brick_dir }}"
+    transport: tcp
+    replicas: "{{ numedges }}"
+    cluster: "{{ groups.gfsedge | join(',') }}"
+    host: "{{ inventory_hostname }}"
+    force: yes
+  run_once: true
+
+- name: Start Gluster Volume
+  gluster_volume:
+    state: started
+    name: glustervol1
+  register: gluster_start_info
+  ignore_errors: True
+
+- debug:
+        var: gluster_start_info.stdout_lines
+
+- name: Check gluster volume info
+  shell: /usr/sbin/gluster volume info
+  register: gluster_volume_info
+  ignore_errors: true  
+
+- debug:
+        var: gluster_volume_info.stdout_lines

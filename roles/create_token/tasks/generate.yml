@@ -1,0 +1,40 @@
+---
+
+# Tasks Install Kubernetes Repository
+- name: Clean existing repo and install kubernetes repo 
+  file:
+    state: absent
+    path: /etc/yum.repos.d/kubernetes.repo
+
+- name: Import kubernetes repo
+  copy: 
+    src: kubernetes.repo
+    dest: /etc/yum.repos.d/
+
+# Tasks Installing kubelet and kubeadm    
+- name: Uninstall old versions kubelet kubeadm kubernetes-cni
+  yum: name={{ item }} state=absent
+  with_items:
+   - kubeadm
+  ignore_errors: True
+
+- name: Install kubelet kubeadm kubernetes-cni
+  yum: name={{ item }} state=latest
+  with_items:
+   - kubeadm
+
+- name: Generate token
+  shell: kubeadm token generate
+  register: token_raw
+
+- set_fact:
+    admission_token: '{{ token_raw.stdout }}'
+
+- file:
+    path: /cfg/{{ clustername }}
+    state: directory
+
+- name: Save token.yml file
+  copy:
+    dest: /cfg/{{ clustername }}/token.yml
+    content: "admission_token: {{ admission_token }}"
